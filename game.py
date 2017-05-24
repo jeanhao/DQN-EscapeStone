@@ -39,7 +39,7 @@ STONE_POS_X = [0, 50, 100]
 STONE_UPDATE_DISTANCE = 150  # 两层石头间的距离
 
 SCORE_SPEED_RECORD_TIME_INTERVAL = 1000  # 每两秒记录一次
-
+SAVE_SPPED_FLAG = 100  # 保存次数
 class GameObject(object):
 
     def __init__(self):
@@ -49,6 +49,7 @@ class GameObject(object):
         self.last_score = deque([0])
         self.last_score_time = deque([0])
         self.speed = 0
+        self.save_spped_flag = 1
 
     def init(self):
         self.play = False
@@ -188,6 +189,13 @@ class GameObject(object):
                 self.speed = (self.score - self.last_score.popleft()) / (pygame.time.get_ticks() - self.last_score_time.popleft()) * 1000
             self.last_score_time.append(pygame.time.get_ticks())
             self.last_score.append(self.score)
+            if self.save_spped_index >= SAVE_SPPED_FLAG:
+                self.save_spped_flag = 1
+                with open('speeds_file.txt', 'a') as f:
+                    f.write("score:%d, speed:%d" % (self.score, self.speed))
+            else:
+                self.save_spped_index += 1
+
 
 if __name__ == '__main__':
         GameObject().welcome()
