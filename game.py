@@ -5,8 +5,6 @@ import sys
 import random
 from collections import deque
 from pygame.locals import *  # @UnusedWildImport
-from numpy import uint8
-from PIL import Image
 
 
 
@@ -40,14 +38,20 @@ STONE_INIT_POS_Y = 0  # 石头初始化位置
 STONE_POS_X = [0, 50, 100]
 STONE_UPDATE_DISTANCE = 150  # 两层石头间的距离
 
+SCORE_SPEED_RECORD_TIME_INTERVAL = 2  # 每两秒记录一次
+
 class GameObject(object):
 
     def __init__(self):
         self.init()
+        self.score = 0
+        # 用于统计速度
+        self.last_score = 0
+        self.last_score_time = 0
+        self.speed
 
     def init(self):
         self.play = False
-        self.score = 0
         self.player_pos = 1
         self.stone_speed_y = 10
         self.stones = deque()
@@ -57,7 +61,7 @@ class GameObject(object):
         score_surface = score_font.render("Click space to start game", True, WHITE)
         SCREEN.blit(score_surface, (25, 140))
         pygame.display.update()
-        self.init()
+        self.__init__()  # 更彻底地初始化，包括得分
         while not self.play:
             for event in pygame.event.get():
                 if event.type == QUIT or (event.type == KEYDOWN and event.key == K_UP):
@@ -84,6 +88,7 @@ class GameObject(object):
 
             reward = self.update_stones()
             if reward == -1:  # 游戏结束
+                self.score -= 1
                 self.welcome()
             else:
                 self.score += reward
@@ -94,12 +99,19 @@ class GameObject(object):
     def update_screen(self):
         # 重绘背景
         SCREEN.fill(BLACK)
-        # 画右边部分，目前只有分数
+        # 画右边部分，目前有分数和速度
         pygame.draw.line(SCREEN, WHITE, (SCREENWIDTH - 50, 0), (SCREENWIDTH - 50, SCREENHEIGHT))
-        score_text_surface = score_font.render("score:", True, WHITE)
+        score_text_surface = score_font.render("score", True, WHITE)
         SCREEN.blit(score_text_surface, (160, 0))
         score_surface = score_font.render(str(self.score), True, WHITE)
         SCREEN.blit(score_surface, (160, 20))
+
+        score_text_surface = score_font.render("seed", True, WHITE)
+        SCREEN.blit(score_text_surface, (160, 40))
+        score_surface = score_font.render(str(self.speed), True, WHITE)
+        SCREEN.blit(score_surface, (160, 60))
+
+
         # 画主角
         pygame.draw.rect(SCREEN, WHITE, Rect((self.player_pos * OBJECT_WIDTH, PLAYER_POS_Y), PLAYER_SIZE))
         # 画石头
@@ -108,8 +120,7 @@ class GameObject(object):
                 pygame.draw.rect(SCREEN, WHITE, Rect(stone_pos, PLAYER_SIZE))
         pygame.display.update()
 
-    def gen_stones(self):
-        # 随机生成两个位置
+    def gen_stones(self):  # 随机生成两个位置
         return [[pos, STONE_INIT_POS_Y] for pos in random.sample(STONE_POS_X, 2)]
 
     def update_stones(self):
@@ -161,10 +172,18 @@ class GameObject(object):
         if reward == -1:  # 发生了碰撞
             self.init()
 
+        # 更新速度
+        self.update_score_speed()
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())[:150]
         self.update_screen()
 
         return image_data, reward
+
+    def update_score_speed(self):  # 更新速度
+        if pygame.time.get_ticks() - self.last_score_time > SCORE_SPEED_RECORD_TIME_INTERVAL:  # 超过记录长度，可以开始记录
+            self.speed = self.score - self.last_score / (pygame.time.get_ticks() - self.last_score_time)
+            self.last_score_time = pygame.time.get_ticks()
+            self.last_score = self.score
 
 if __name__ == '__main__':
         GameObject().welcome()

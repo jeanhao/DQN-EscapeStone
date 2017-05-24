@@ -9,6 +9,8 @@ import numpy as np
 import random
 from collections import deque
 from config import IMG_WIDTH, IMG_HEIGHT
+import os
+import shutil
 
 # Hyper Parameters:
 FRAME_PER_ACTION = 1  # 每多少帧进行一次行动
@@ -20,6 +22,15 @@ INITIAL_EPSILON = 0.1  # starting value of epsilon
 REPLAY_MEMORY = 50000  # number of previous transitions to remember
 BATCH_SIZE = 32  # size of minibatch
 UPDATE_TIME = 100
+
+BACKUP_INTERVAL = 40000
+
+def copyFiles(sourceDir, targetDir):
+	for files in os.listdir(sourceDir):
+		sourceFile = os.path.join(sourceDir, files)  # 把目录名和文件名链接起来
+		targetFile = os.path.join(targetDir, files)
+		if os.path.isfile(sourceFile) and sourceFile.find('network-dqn-') > 0:
+			shutil.move(sourceFile, targetFile)
 
 class BrainDQN:
 
@@ -44,12 +55,23 @@ class BrainDQN:
 		self.saver = tf.train.Saver()
 		self.session = tf.InteractiveSession()
 		self.session.run(tf.global_variables_initializer())
-		checkpoint = tf.train.get_checkpoint_state("saved_networks")
+
+		self.networks_directory = "saved_networks"
+		self.all_networks_directory = "all_networks"
+		if not os.path.exists(self.networks_directory):
+			os.makedirs(self.networks_directory)
+		if not os.path.exists(self.all_networks_directory):
+			os.makedirs(self.all_networks_directory)
+
+		checkpoint = tf.train.get_checkpoint_state(self.networks_directory)
+
 		if checkpoint and checkpoint.model_checkpoint_path:
 				self.saver.restore(self.session, checkpoint.model_checkpoint_path)
 				print("Successfully loaded:", checkpoint.model_checkpoint_path)
 		else:
 				print("Could not find old network weights")
+
+		self.checkpoint_record = 0
 
 	def createQNetwork(self):
 		# network weights
@@ -101,7 +123,6 @@ class BrainDQN:
 
 	def trainQNetwork(self):
 
-
 		# Step 1: obtain random minibatch from replay memory
 		minibatch = random.sample(self.replayMemory, BATCH_SIZE)
 		state_batch = [data[0] for data in minibatch]
@@ -124,12 +145,19 @@ class BrainDQN:
 			self.stateInput : state_batch
 			})
 
-		# save network every 100000 iteration
+		# save network every 10000 iteration
 		if self.timeStep % 10000 == 0:
 			self.saver.save(self.session, 'saved_networks/' + 'network' + '-dqn', global_step=self.timeStep)
 
+		if self.timeStep - self.checkpoint_record >= BACKUP_INTERVAL:  # 每隔一定间隔备份网络
+			self.timeStep += BACKUP_INTERVAL
+			copyFiles(self.networks_directory, self.all_networks_directory)
+			# 删除checkpoint文件
+			shutil.rmtree(self.networks_directory + "/checkpoint")
+
 		if self.timeStep % UPDATE_TIME == 0:
 			self.copyTargetQNetwork()
+
 
 
 	def setPerception(self, nextObservation, action, reward):
