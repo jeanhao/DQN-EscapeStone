@@ -192,7 +192,7 @@ class GameObject(object):
             if self.save_spped_index >= SAVE_SPPED_FLAG:
                 self.save_spped_flag = 1
                 with open('speeds_file.txt', 'a') as f:
-                    f.write("time:%s, score:%d, speed:%d\n" % (str(pygame.time.get_ticks()), self.score, self.speed))
+                    f.write("time:%s, score:%5f, speed:%5f\n" % (str(pygame.time.get_ticks()), self.score, self.speed))
             else:
                 self.save_spped_index += 1
 

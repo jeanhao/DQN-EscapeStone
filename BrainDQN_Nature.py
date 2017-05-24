@@ -116,7 +116,7 @@ class BrainDQN:
 	def createTrainingMethod(self):
 		self.actionInput = tf.placeholder("float", [None, self.actions])
 		self.yInput = tf.placeholder("float", [None])
-		Q_Action = tf.reduce_sum(tf.mul(self.QValue, self.actionInput), axis=1)
+		Q_Action = tf.reduce_sum(tf.multiply(self.QValue, self.actionInput), axis=1)
 		self.cost = tf.reduce_mean(tf.square(self.yInput - Q_Action))
 		self.trainStep = tf.train.AdamOptimizer(1e-6).minimize(self.cost)
 
@@ -153,10 +153,11 @@ class BrainDQN:
 			self.timeStep += BACKUP_INTERVAL
 			copyFiles(self.networks_directory, self.all_networks_directory)
 			# 删除checkpoint文件
-			shutil.rmtree(self.networks_directory + "/checkpoint")
+# 			os.remove(self.networks_directory + "/checkpoint")
 
 		if self.timeStep % UPDATE_TIME == 0:
 			self.copyTargetQNetwork()
+			
 
 
 
