@@ -49,7 +49,7 @@ class GameObject(object):
         self.last_score = deque([0])
         self.last_score_time = deque([0])
         self.speed = 0
-        self.save_spped_flag = 1
+        self.save_spped_index = 1
 
     def init(self):
         self.play = False
@@ -192,7 +192,7 @@ class GameObject(object):
             if self.save_spped_index >= SAVE_SPPED_FLAG:
                 self.save_spped_flag = 1
                 with open('speeds_file.txt', 'a') as f:
-                    f.write("time:%s, score:%d, speed:%d" % (str(self.last_score_time), self.score, self.speed))
+                    f.write("time:%s, score:%d, speed:%d\n" % (str(pygame.time.get_ticks()), self.score, self.speed))
             else:
                 self.save_spped_index += 1
 
