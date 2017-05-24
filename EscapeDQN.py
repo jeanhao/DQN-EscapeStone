@@ -11,10 +11,10 @@ import cv2
 from BrainDQN_Nature import BrainDQN
 import numpy as np
 from game import GameObject
-from PIL import Image
-from numpy import uint8
 from config import IMG_HEIGHT, IMG_WIDTH
 
+TRAIN = False
+# TRAIN = True
 # preprocess raw image to img_size*img_size gray image
 def preprocess(observation):
 #     observation = cv2.resize(observation, (IMG_WIDTH, IMG_HEIGHT))
@@ -23,13 +23,10 @@ def preprocess(observation):
     return np.reshape(observation, (IMG_WIDTH, IMG_HEIGHT, 1))
 
 def playGame():
-    # Step 1: init BrainDQN
-    actions = 3
-    brain = BrainDQN(actions)
-    # Step 2: init Flappy Bird Game
     game = GameObject()
-    # Step 3: play game
-    # Step 3.1: obtain init state
+    game.train = TRAIN
+    actions = 3
+    brain = BrainDQN(actions, game)
     action0 = np.array([1, 0, 0])  # do nothing
     observation0, _ = game.frame_step(action0)
     observation0 = cv2.resize(observation0, (IMG_HEIGHT, IMG_WIDTH))
@@ -37,12 +34,12 @@ def playGame():
 
     brain.setInitState(observation0)
 
-    # Step 3.2: run the game
-    while 1 != 0:
+    while True:
         action = brain.getAction()
         nextObservation, reward = game.frame_step(action)
         nextObservation = preprocess(nextObservation)
         brain.setPerception(nextObservation, action, reward)
+        
 
 if __name__ == '__main__':
     playGame()

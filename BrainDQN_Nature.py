@@ -34,13 +34,14 @@ def copyFiles(sourceDir, targetDir):
 
 class BrainDQN:
 
-	def __init__(self, actions):
+	def __init__(self, actions, game=None):
 		# init replay memory
 		self.replayMemory = deque()
 		# init some parameters
 		self.timeStep = 0
 		self.epsilon = INITIAL_EPSILON
 		self.actions = actions
+		self.game = game
 		# init Q network
 		self.stateInput, self.QValue, self.W_conv1, self.b_conv1, self.W_conv2, self.b_conv2, self.W_conv3, self.b_conv3, self.W_fc1, self.b_fc1, self.W_fc2, self.b_fc2 = self.createQNetwork()
 
@@ -157,8 +158,6 @@ class BrainDQN:
 
 		if self.timeStep % UPDATE_TIME == 0:
 			self.copyTargetQNetwork()
-			
-
 
 
 	def setPerception(self, nextObservation, action, reward):
@@ -168,8 +167,9 @@ class BrainDQN:
 		if len(self.replayMemory) > REPLAY_MEMORY:
 			self.replayMemory.popleft()
 		if self.timeStep > OBSERVE:
-			# Train the network
-			self.trainQNetwork()
+				# Train the network
+			if not self.game or self.game.train:
+				self.trainQNetwork()
 
 		# print info for debug
 		state = ""
