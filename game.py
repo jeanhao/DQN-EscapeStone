@@ -38,7 +38,7 @@ STONE_INIT_POS_Y = 0  # 石头初始化位置
 STONE_POS_X = [0, 50, 100]
 STONE_UPDATE_DISTANCE = 150  # 两层石头间的距离
 
-SCORE_SPEED_RECORD_TIME_INTERVAL = 2  # 每两秒记录一次
+SCORE_SPEED_RECORD_TIME_INTERVAL = 1000  # 每两秒记录一次
 
 class GameObject(object):
 
@@ -46,14 +46,14 @@ class GameObject(object):
         self.init()
         self.score = 0
         # 用于统计速度
-        self.last_score = 0
-        self.last_score_time = 0
-        self.speed
+        self.last_score = deque([0])
+        self.last_score_time = deque([0])
+        self.speed = 0
 
     def init(self):
         self.play = False
         self.player_pos = 1
-        self.stone_speed_y = 10
+        self.stone_speed_y = 5
         self.stones = deque()
 
     def welcome(self):
@@ -92,7 +92,9 @@ class GameObject(object):
                 self.welcome()
             else:
                 self.score += reward
+
             # 更新画面
+            self.update_score_speed()
             self.update_screen()
             FPSCLOCK.tick(FPS)  # 一帧后处理下个事件
 
@@ -106,7 +108,7 @@ class GameObject(object):
         score_surface = score_font.render(str(self.score), True, WHITE)
         SCREEN.blit(score_surface, (160, 20))
 
-        score_text_surface = score_font.render("seed", True, WHITE)
+        score_text_surface = score_font.render("speed", True, WHITE)
         SCREEN.blit(score_text_surface, (160, 40))
         score_surface = score_font.render(str(self.speed), True, WHITE)
         SCREEN.blit(score_surface, (160, 60))
@@ -169,6 +171,7 @@ class GameObject(object):
 
         reward = self.update_stones()
 
+        self.score += reward
         if reward == -1:  # 发生了碰撞
             self.init()
 
@@ -180,10 +183,11 @@ class GameObject(object):
         return image_data, reward
 
     def update_score_speed(self):  # 更新速度
-        if pygame.time.get_ticks() - self.last_score_time > SCORE_SPEED_RECORD_TIME_INTERVAL:  # 超过记录长度，可以开始记录
-            self.speed = self.score - self.last_score / (pygame.time.get_ticks() - self.last_score_time)
-            self.last_score_time = pygame.time.get_ticks()
-            self.last_score = self.score
+        if pygame.time.get_ticks() - self.last_score_time[-1] > SCORE_SPEED_RECORD_TIME_INTERVAL:  # 超过记录长度，可以开始记录
+            if(len(self.last_score) >= 10):
+                self.speed = (self.score - self.last_score.popleft()) / (pygame.time.get_ticks() - self.last_score_time.popleft()) * 1000
+            self.last_score_time.append(pygame.time.get_ticks())
+            self.last_score.append(self.score)
 
 if __name__ == '__main__':
         GameObject().welcome()
